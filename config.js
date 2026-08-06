@@ -12,6 +12,7 @@ export const CONFIG = {
     .map((n) => n.trim())
     .filter(Boolean),
   planoutUrl: process.env.PLANOUT_URL || "https://planout.ar/eventos/es/rb-sabados",
+  panelKey: process.env.PANEL_KEY || "rocabruja",
   port: process.env.PORT || 3000,
 };
 

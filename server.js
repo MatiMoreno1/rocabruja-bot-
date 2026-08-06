@@ -280,4 +280,138 @@ app.get("/privacy", (_req, res) => {
 </body></html>`);
 });
 
+// ============================================================
+// PANEL DE CONTROL — /panel?key=TU_CLAVE
+// Ver conversaciones en vivo, pausar el bot y responder a mano.
+// (El estado está en memoria: se reinicia si el bot reinicia.)
+// ============================================================
+function checkKey(req, res) {
+  const key = req.query.key || req.body?.key;
+  if (key !== CONFIG.panelKey) {
+    res.status(401).send("Clave incorrecta");
+    return false;
+  }
+  return true;
+}
+
+function lastOf(history, role) {
+  for (let i = history.length - 1; i >= 0; i--) {
+    if (history[i].role === role) return history[i].content;
+  }
+  return "";
+}
+
+// Datos en JSON para el panel
+app.get("/panel/data", (req, res) => {
+  if (!checkKey(req, res)) return;
+  const convs = [...conversations.entries()].map(([phone, c]) => ({
+    phone,
+    phase: c.phase,
+    msgCount: c.msgCount,
+    busca: c.lastData?.camino || "",
+    nombre: c.lastData?.nombre || "",
+    ultimoCliente: lastOf(c.history, "user"),
+    ultimoBot: lastOf(c.history, "assistant"),
+  }));
+  const pend = [...pending.entries()].map(([phone, p]) => ({ phone, name: p.name, data: p.data }));
+  res.json({ conversations: convs.reverse(), pending: pend });
+});
+
+// Acciones: pausar / reanudar el bot, o enviar un mensaje a mano
+app.post("/panel/action", async (req, res) => {
+  if (!checkKey(req, res)) return;
+  const { action, phone, text } = req.body || {};
+  if (!phone) return res.status(400).json({ error: "falta phone" });
+  const convo = getConvo(phone);
+  if (action === "pause") convo.phase = "handoff";
+  else if (action === "resume") convo.phase = "activo";
+  else if (action === "send") {
+    if (!text) return res.status(400).json({ error: "falta text" });
+    convo.phase = "handoff"; // al responder a mano, el bot se pausa en ese chat
+    convo.history.push({ role: "assistant", content: text });
+    await sendText(phone, text);
+  }
+  res.json({ ok: true, phase: convo.phase });
+});
+
+// La página del panel
+app.get("/panel", (req, res) => {
+  const key = req.query.key || "";
+  res.set("Content-Type", "text/html; charset=utf-8").send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Panel · Roca Bruja Bot</title>
+<style>
+:root{--navy:#1A2B3A;--green:#16a34a;--red:#dc2626;--muted:#6b7280;--border:#e5e7eb;--bg:#f8fafc;--wa:#e7ffdb}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+body{background:var(--bg);color:#1f2937;font-size:14px}
+.hdr{background:var(--navy);color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+.hdr h1{font-size:18px}.hdr .sub{font-size:12px;color:#c7d2dd}
+.wrap{max-width:1000px;margin:0 auto;padding:18px}
+.card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px}
+h2{font-size:15px;color:var(--navy);margin-bottom:10px}
+.conv{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.phone{font-weight:700;color:var(--navy)}
+.badge{font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:10px}
+.b-bot{background:#dcfce7;color:#166534}.b-hand{background:#fef9c3;color:#854d0e}.b-close{background:#fee2e2;color:#991b1b}
+.msg{background:#f1f5f9;border-radius:8px;padding:7px 10px;margin:6px 0;font-size:13px;white-space:pre-wrap}
+.msg.cli{background:#eef2ff}.msg.bot{background:var(--wa)}
+.lbl{font-size:10px;text-transform:uppercase;color:var(--muted);font-weight:700}
+input,button{font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid var(--border)}
+button{cursor:pointer;font-weight:600;border:none}
+.btn-p{background:#fef9c3;color:#854d0e}.btn-r{background:#dcfce7;color:#166534}.btn-s{background:var(--navy);color:#fff}
+.reply{display:flex;gap:8px;margin-top:8px}.reply input{flex:1}
+.pend{background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px;margin-bottom:10px}
+.empty{color:var(--muted);font-style:italic;padding:8px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px}
+</style></head><body>
+<div class="hdr"><div><h1>🖤 Panel · Roca Bruja Bot</h1><div class="sub"><span class="dot"></span>En vivo · se actualiza solo cada 8s</div></div></div>
+<div class="wrap">
+<div class="card"><h2>⏳ Esperando aprobación</h2><div id="pending"><div class="empty">Cargando…</div></div></div>
+<div class="card"><h2>💬 Conversaciones</h2><div id="convs"><div class="empty">Cargando…</div></div></div>
+</div>
+<script>
+const KEY = ${JSON.stringify(key)};
+async function load(){
+  try{
+    const r = await fetch('/panel/data?key='+encodeURIComponent(KEY));
+    if(!r.ok){document.getElementById('convs').innerHTML='<div class="empty">Clave incorrecta. Usá /panel?key=TU_CLAVE</div>';return;}
+    const d = await r.json();
+    renderPending(d.pending); renderConvs(d.conversations);
+  }catch(e){}
+}
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function renderPending(p){
+  const el=document.getElementById('pending');
+  if(!p.length){el.innerHTML='<div class="empty">Nada pendiente ahora.</div>';return;}
+  el.innerHTML=p.map(x=>'<div class="pend"><b>'+esc(x.name||x.phone)+'</b> · '+esc(x.phone)+'<br>🎯 '+esc(x.data.camino||'-')+' · 📅 '+esc(x.data.fecha||'-')+' · 👥 '+esc(x.data.cuantos||'-')+'<br>📸 '+esc(x.data.instagram||'-')+' · 🎂 '+esc(x.data.edades||'-')+'</div>').join('');
+}
+function badge(ph){if(ph==='handoff')return '<span class="badge b-hand">Persona</span>';if(ph==='cerrado')return '<span class="badge b-close">Cerrado</span>';return '<span class="badge b-bot">Bot</span>';}
+function renderConvs(c){
+  const el=document.getElementById('convs');
+  if(!c.length){el.innerHTML='<div class="empty">Todavía no hay conversaciones (se borran si el bot reinicia).</div>';return;}
+  el.innerHTML=c.map(x=>{
+    const pauseBtn = x.phase==='handoff' ? '<button class="btn-r" onclick="act(\\''+x.phone+'\\',\\'resume\\')">▶ Reanudar bot</button>' : '<button class="btn-p" onclick="act(\\''+x.phone+'\\',\\'pause\\')">⏸ Pausar bot</button>';
+    return '<div class="conv"><div class="row"><span class="phone">'+esc(x.nombre||'')+' '+esc(x.phone)+'</span><span>'+badge(x.phase)+' '+pauseBtn+'</span></div>'+
+    (x.busca?'<div class="lbl">Busca: '+esc(x.busca)+'</div>':'')+
+    (x.ultimoCliente?'<div class="msg cli"><b>Cliente:</b> '+esc(x.ultimoCliente)+'</div>':'')+
+    (x.ultimoBot?'<div class="msg bot"><b>Bot:</b> '+esc(x.ultimoBot)+'</div>':'')+
+    '<div class="reply"><input id="i_'+x.phone+'" placeholder="Escribir como Roca Bruja…"><button class="btn-s" onclick="send(\\''+x.phone+'\\')">Enviar</button></div></div>';
+  }).join('');
+}
+async function act(phone,action){
+  await fetch('/panel/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,phone,action})});
+  load();
+}
+async function send(phone){
+  const inp=document.getElementById('i_'+phone); const text=inp.value.trim(); if(!text)return;
+  inp.value='';
+  await fetch('/panel/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:KEY,phone,action:'send',text})});
+  load();
+}
+load(); setInterval(load,8000);
+</script>
+</body></html>`);
+});
+
 app.listen(CONFIG.port, () => console.log(`🚀 Bot escuchando en puerto ${CONFIG.port}`));
