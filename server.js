@@ -44,9 +44,11 @@ app.get("/webhook", (req, res) => {
 app.post("/webhook", async (req, res) => {
   res.sendStatus(200); // responder rápido a Meta; procesamos aparte
   try {
+    console.log("📩 Webhook POST recibido:", JSON.stringify(req.body).slice(0, 300));
     const entry = req.body.entry?.[0]?.changes?.[0]?.value;
     const msg = entry?.messages?.[0];
     if (!msg) return; // puede ser un status (entregado/leído), lo ignoramos
+    console.log("💬 Mensaje de", msg.from, "tipo", msg.type);
     const from = msg.from; // número de quien escribe (intl, sin +)
     const contactName = entry?.contacts?.[0]?.profile?.name || "";
     markRead(msg.id).catch(() => {});
@@ -235,6 +237,23 @@ function safeParse(raw) {
 }
 
 app.get("/", (_req, res) => res.send("Roca Bruja bot ✅"));
+
+// Suscribe la app a la cuenta de WhatsApp (WABA). Visitar una sola vez:
+//   /subscribe?waba=TU_WABA_ID
+app.get("/subscribe", async (req, res) => {
+  const waba = req.query.waba;
+  if (!waba) return res.status(400).send("Falta ?waba=TU_WABA_ID");
+  try {
+    const r = await fetch(`https://graph.facebook.com/v20.0/${waba}/subscribed_apps`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${CONFIG.whatsappToken}` },
+    });
+    const body = await r.text();
+    res.status(r.status).type("application/json").send(body);
+  } catch (e) {
+    res.status(500).send(String(e));
+  }
+});
 
 // Política de privacidad (requisito de Meta para activar la app)
 app.get("/privacy", (_req, res) => {
