@@ -3,7 +3,15 @@ import { CONFIG } from "./config.js";
 
 const API = `https://graph.facebook.com/v20.0/${CONFIG.phoneNumberId}/messages`;
 
+// Argentina: el webhook trae el número con "9" (549...), pero para ENVIAR
+// WhatsApp espera el número SIN el 9 (54...). Lo normalizamos.
+function normalizeTo(to) {
+  if (typeof to === "string" && /^549\d+/.test(to)) return "54" + to.slice(3);
+  return to;
+}
+
 async function send(payload) {
+  if (payload.to) payload = { ...payload, to: normalizeTo(payload.to) };
   const res = await fetch(API, {
     method: "POST",
     headers: {
