@@ -235,4 +235,30 @@ function safeParse(raw) {
 }
 
 app.get("/", (_req, res) => res.send("Roca Bruja bot ✅"));
+
+// Política de privacidad (requisito de Meta para activar la app)
+app.get("/privacy", (_req, res) => {
+  res.set("Content-Type", "text/html; charset=utf-8").send(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Política de Privacidad · Roca Bruja</title>
+<style>body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;max-width:760px;margin:40px auto;padding:0 20px;line-height:1.6;color:#1f2937}h1{color:#1A2B3A}h2{color:#1A2B3A;margin-top:28px}small{color:#6b7280}</style>
+</head><body>
+<h1>Política de Privacidad — Roca Bruja</h1>
+<small>Última actualización: agosto 2026</small>
+<p>Roca Bruja ("nosotros") opera un canal de atención por WhatsApp para responder consultas, gestionar reservas de entradas, combos y mesas, y coordinar con nuestro equipo. Esta política explica qué datos tratamos y cómo.</p>
+<h2>Qué datos recopilamos</h2>
+<p>Cuando nos escribís por WhatsApp podemos recibir: tu número de teléfono, tu nombre, y la información que nos compartís voluntariamente en la conversación (por ejemplo fecha del evento, cantidad de personas, Instagram, edades y datos de contacto del grupo). Si reportás un objeto perdido, los datos que nos des para ayudarte a recuperarlo.</p>
+<h2>Para qué usamos tus datos</h2>
+<p>Usamos esos datos únicamente para atenderte: responder tu consulta, coordinar tu reserva o compra, ponerte en contacto con un organizador y brindarte soporte. No vendemos ni cedemos tus datos a terceros con fines publicitarios.</p>
+<h2>Con quién los compartimos</h2>
+<p>La conversación se procesa a través de la plataforma de WhatsApp Business (Meta) y de servicios técnicos que hacen funcionar el asistente. Nuestro equipo de organizadores puede acceder a los datos necesarios para cerrar tu reserva.</p>
+<h2>Conservación</h2>
+<p>Conservamos los datos el tiempo necesario para atenderte y cumplir obligaciones legales o contables. Podés pedirnos que eliminemos tu información.</p>
+<h2>Tus derechos</h2>
+<p>Podés solicitar acceder, corregir o eliminar tus datos escribiéndonos por el mismo WhatsApp o al correo de contacto de Roca Bruja.</p>
+<h2>Contacto</h2>
+<p>Ante cualquier consulta sobre privacidad, escribinos por nuestro canal de WhatsApp de Roca Bruja.</p>
+</body></html>`);
+});
+
 app.listen(CONFIG.port, () => console.log(`🚀 Bot escuchando en puerto ${CONFIG.port}`));
