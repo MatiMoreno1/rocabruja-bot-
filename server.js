@@ -155,6 +155,7 @@ async function notifyOrganizer(clientPhone, contactName, d) {
     `🎯 Busca: ${caminoLabel(d.camino)}\n` +
     `📅 ${d.fecha || "—"}  ·  👥 ${d.cuantos || "—"}\n` +
     `🎂 Edades: ${d.edad_min || "—"} a ${d.edad_max || "—"}\n` +
+    `📸 IG: ${d.instagram || "—"}\n` +
     `📱 WhatsApp: ${d.whatsapp || "—"}\n` +
     `¿Lo aprobás?`;
   await sendButtons(CONFIG.organizerPhone, resumen, [
@@ -383,7 +384,7 @@ function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':
 function renderPending(p){
   const el=document.getElementById('pending');
   if(!p.length){el.innerHTML='<div class="empty">Nada pendiente ahora.</div>';return;}
-  el.innerHTML=p.map(x=>'<div class="pend"><b>'+esc(x.name||x.phone)+'</b> · '+esc(x.phone)+'<br>🎯 '+esc(x.data.camino||'-')+' · 📅 '+esc(x.data.fecha||'-')+' · 👥 '+esc(x.data.cuantos||'-')+'<br>🎂 '+esc(x.data.edad_min||'-')+' a '+esc(x.data.edad_max||'-')+' · 📱 '+esc(x.data.whatsapp||'-')+'</div>').join('');
+  el.innerHTML=p.map(x=>'<div class="pend"><b>'+esc(x.name||x.phone)+'</b> · '+esc(x.phone)+'<br>🎯 '+esc(x.data.camino||'-')+' · 📅 '+esc(x.data.fecha||'-')+' · 👥 '+esc(x.data.cuantos||'-')+'<br>🎂 '+esc(x.data.edad_min||'-')+' a '+esc(x.data.edad_max||'-')+' · 📸 '+esc(x.data.instagram||'-')+' · 📱 '+esc(x.data.whatsapp||'-')+'</div>').join('');
 }
 function badge(ph){if(ph==='handoff')return '<span class="badge b-hand">Persona</span>';if(ph==='cerrado')return '<span class="badge b-close">Cerrado</span>';return '<span class="badge b-bot">Bot</span>';}
 function renderConvs(c){
