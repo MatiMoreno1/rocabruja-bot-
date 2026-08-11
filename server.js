@@ -53,9 +53,16 @@ app.post("/webhook", async (req, res) => {
     const contactName = entry?.contacts?.[0]?.profile?.name || "";
     markRead(msg.id).catch(() => {});
 
-    // 1) ¿Es el organizador tocando un botón de Aprobar/Rechazar?
-    if (from === CONFIG.organizerPhone && msg.type === "interactive") {
-      return handleOrganizerDecision(msg);
+    // 1) ¿Es el organizador?
+    if (from === CONFIG.organizerPhone) {
+      // Si tocó un botón (Aprobar/Rechazar), resolvemos la decisión.
+      if (msg.type === "interactive") return handleOrganizerDecision(msg);
+      // Si escribe texto (ej. "hola" para abrir la ventana de 24 hs), NO lo tratamos
+      // como cliente: le confirmamos que está en modo organizador.
+      return sendText(
+        CONFIG.organizerPhone,
+        "👋 Listo, quedás como *organizador*. Te aviso por acá cuando haya un pedido para aprobar (con los botones ✅ / ❌). No hace falta que escribas nada más."
+      );
     }
 
     // 2) ¿Es un RRPP de la whitelist? → flujo vendedor (no en esta versión)
