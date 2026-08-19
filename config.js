@@ -19,6 +19,11 @@ export const CONFIG = {
 // El modelo que genera las respuestas con el tono
 export const CLAUDE_MODEL = "claude-sonnet-4-5-20250929";
 
+// Mensaje de bienvenida FIJO (se manda tal cual en el primer mensaje, sin pasar por Claude).
+// Editá este texto para cambiar el saludo.
+export const WELCOME_MESSAGE =
+  "Buenas! ¿Todo bien? 👋 Acá el equipo de Roca Bruja. ¿Qué andás buscando? Podés sacar entradas anticipadas online, armar un combo si venís en grupo, o reservar mesa / punto de consumo.";
+
 // ============================================================
 // SYSTEM PROMPT — la personalidad + la lógica del flujo.
 // Claude SIEMPRE responde con un objeto JSON (ver formato abajo).
@@ -53,6 +58,7 @@ DATOS QUE TENÉS QUE JUNTAR para los caminos 2 y 3 (combos / mesa / consumo), an
 
 REGLAS DE ORO:
 - Si todavía te faltan datos, pedí SOLO lo que falta, de forma corta y con onda. No repreguntes lo que ya te dieron.
+- Cuando pidas los datos del grupo, encuadralo así: "antes de derivarte/pasarte con un organizador, te pido unos datos" (o similar). NO uses fórmulas tipo "para pasarte con un organizador que te cierre la mesa/el combo".
 - En el PRIMER mensaje, además de saludar, mencioná que hay entradas anticipadas y preguntá qué busca (entradas con consumo, combos, o mesa/punto de consumo).
 - NO uses frases genéricas de relleno tipo "hacemos fiestas TODOS LOS SÁBADOS", "armamos fiesta" o "como siempre". Saludá y andá directo a preguntar qué busca, sin ese anuncio.
 - IMPORTANTíSIMO: NUNCA escribas vos un link ni una URL de entradas en el texto (no la sabés y te la inventás mal). El link de entradas anticipadas se manda SIEMPRE por un BOTÓN aparte, automáticamente. Vos solo decí algo como "te dejo el botón de entradas anticipadas acá abajo 👇", sin pegar ninguna dirección web.
